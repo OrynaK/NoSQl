@@ -1,18 +1,19 @@
-package ua.nure.dao.EntityDAOImpl;
+package ua.nure.dao.EntityDAOImpl.mysql;
 
-import ua.nure.dao.ConnectionManager;
 import ua.nure.dao.EntityDAO.ClothingDAO;
 import ua.nure.entity.Clothing;
+import ua.nure.entity.User;
 import ua.nure.entity.enums.Season;
 import ua.nure.entity.enums.Sex;
 import ua.nure.entity.enums.Size;
 
+import java.awt.*;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClothingDAOImpl implements ClothingDAO {
+public class MySQLClothingDAOImpl implements ClothingDAO {
     private static final String GET_ALL_CLOTHES = "SELECT * FROM clothing";
     private static final String UPDATE = "UPDATE clothing SET name=?, size=?, color=?, season=?, amount=?, actual_price=?, sex=? WHERE id=?";
     private static final String DELETE = "DELETE FROM clothing WHERE id=?";
@@ -21,14 +22,14 @@ public class ClothingDAOImpl implements ClothingDAO {
     private static final String FIND_BY_ID = "SELECT * FROM clothing WHERE id=?";
     private static final String GET_CLOTHING_BY_SIZE = "SELECT * FROM clothing WHERE size=?";
     private static final String UPDATE_AMOUNT = "UPDATE clothing SET amount=? WHERE id=?";
-    Connection con;
+    private final Connection con;
 
-    public ClothingDAOImpl(Connection connection) {
+    public MySQLClothingDAOImpl(Connection connection) {
         this.con = connection;
     }
 
     @Override
-    public long add(Clothing clothing) {
+    public String add(Clothing clothing) {
         try (PreparedStatement ps = con.prepareStatement(ADD_CLOTHING, Statement.RETURN_GENERATED_KEYS)) {
             int k = 0;
             ps.setString(++k, clothing.getName());
@@ -41,7 +42,7 @@ public class ClothingDAOImpl implements ClothingDAO {
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
-                    clothing.setId(keys.getLong(1));
+                    clothing.setId(String.valueOf(keys.getLong(1)));
                 }
             }
         } catch (SQLException ex) {
@@ -61,7 +62,7 @@ public class ClothingDAOImpl implements ClothingDAO {
             ps.setInt(++k, clothing.getAmount());
             ps.setBigDecimal(++k, clothing.getActualPrice());
             ps.setString(++k, clothing.getSex().toString().toUpperCase());
-            ps.setLong(++k, clothing.getId());
+            ps.setLong(++k, Long.parseLong(clothing.getId()));
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -70,15 +71,15 @@ public class ClothingDAOImpl implements ClothingDAO {
     }
 
     @Override
-    public void delete(long id) {
+    public void delete(String id) {
         try (PreparedStatement st = con.prepareStatement(FIND_CLOTHING_IN_ORDER)) {
-            st.setLong(1, id);
+            st.setLong(1, Long.parseLong(id));
             try (ResultSet resultSet = st.executeQuery()) {
                 if (resultSet.next())
                     throw new SQLException("delete failed. " +
                             "To delete clothing, please, firstly delete order with this clothing");
                 try (PreparedStatement statement = con.prepareStatement(DELETE)) {
-                    statement.setLong(1, id);
+                    statement.setLong(1, Long.parseLong(id));
                     statement.executeUpdate();
                 }
             }
@@ -89,9 +90,9 @@ public class ClothingDAOImpl implements ClothingDAO {
 
 
     @Override
-    public Clothing findById(long id) {
+    public Clothing findById(String  id) {
         try (PreparedStatement ps = con.prepareStatement(FIND_BY_ID)) {
-            ps.setLong(1, id);
+            ps.setLong(1, Long.parseLong(id));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapClothing(rs);
@@ -120,7 +121,7 @@ public class ClothingDAOImpl implements ClothingDAO {
 
     private Clothing mapClothing(ResultSet rs) throws SQLException {
 
-        long id = rs.getLong("id");
+        String id = rs.getString("id");
         String name = rs.getString("name");
         Size size = Size.valueOf(rs.getString("size").toUpperCase());
         String color = rs.getString("color");
@@ -128,7 +129,11 @@ public class ClothingDAOImpl implements ClothingDAO {
         int amount = rs.getInt("amount");
         BigDecimal actualPrice= rs.getBigDecimal("actual_price");
         Sex sex = Sex.valueOf(rs.getString("sex").toUpperCase());
-        return new Clothing.Builder(name,size,color, season, amount, actualPrice, sex).setId(id).build();
+        return new Clothing.Builder(name,size,color, season, sex)
+                .setId(id)
+                .setAmount(amount)
+                .setActualPrice(actualPrice)
+                .build();
     }
 
     @Override
@@ -149,14 +154,35 @@ public class ClothingDAOImpl implements ClothingDAO {
     }
 
     @Override
-    public void updateClothingAmount(long clothingId, int amount)  {
+    public void updateClothingAmount(String clothingId, int amount)  {
             try (PreparedStatement ps = con.prepareStatement(UPDATE_AMOUNT)) {
                 int k = 0;
                 ps.setInt(++k, amount);
-                ps.setLong(++k, clothingId);
+                ps.setLong(++k, Long.parseLong(clothingId));
                 ps.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
     }
+
+    @Override
+    public List<Clothing> findByMultipleKeys(String name, Size size, String color) {
+        List<Clothing> clothingList = new ArrayList<>();
+        try (PreparedStatement ps = con.prepareStatement("SELECT * FROM `clothing` WHERE name=? AND size=? AND color = ?")) {
+            int k = 0;
+            ps.setString(++k, name);
+            ps.setString(++k, String.valueOf(size).toUpperCase());
+            ps.setString(++k, color);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    clothingList.add(mapClothing(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return clothingList;
+    }
+
 }

@@ -11,7 +11,7 @@ import lombok.Data;
 @NoArgsConstructor
 @EqualsAndHashCode
 public class User {
-    private long id;
+    private String id;
     private String name;
     private String surname;
     private String email;
@@ -30,23 +30,22 @@ public class User {
     }
 
     public static class Builder {
-        private long id = 0;
+        private String id;
         private final String name;
         private final String surname;
         private final String email;
-        private final String password;
+        private String password;
         private final String phone;
         private Role role = Role.USER;
 
-        public Builder(String name, String surname, String email, String password, String phone) {
+        public Builder(String name, String surname, String email, String phone) {
             this.name = name;
             this.surname = surname;
             this.email = email;
-            this.password = password;
             this.phone = phone;
         }
 
-        public Builder setId(Long userId) {
+        public Builder setId(String userId) {
             this.id = userId;
             return this;
         }
@@ -56,9 +55,14 @@ public class User {
             return this;
         }
 
+        public Builder setPassword(String password) {
+            this.password = password;
+            return this;
+        }
+
         public User build() {
-            if (name == null || surname == null || email == null || password == null || phone == null) {
-                throw new IllegalStateException("Name, surname, email, phone and password are required to build a user");
+            if (name == null || surname == null || email == null || phone == null) {
+                throw new IllegalStateException("Name, surname, email, phone are required to build a user");
             }
             return new User(this);
         }

@@ -1,5 +1,9 @@
 package ua.nure.dao;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoDatabase;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -9,6 +13,7 @@ public class ConnectionManager {
     private static ConnectionManager instance;
     private Connection connection;
     private ConnectionProperties properties;
+    private MongoDatabase mongoDatabase;
 
     private ConnectionManager(ConnectionProperties properties) {
         this.properties = properties;
@@ -23,17 +28,23 @@ public class ConnectionManager {
     }
 
     private void initializeConnection() {
-        try {
-            connection = DriverManager.getConnection(properties.getUrl(), properties.getUser(), properties.getPassword());
-        } catch (SQLException e) {
-            e.printStackTrace();
+        if ("mysql".equalsIgnoreCase(properties.getType())) {
+            try {
+                connection = DriverManager.getConnection(properties.getUrl(), properties.getUser(), properties.getPassword());
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } else if ("mongodb".equalsIgnoreCase(properties.getType())) {
+            mongoDatabase = MongoClients.create(properties.getMongoUri()).getDatabase(properties.getMongoDatabaseName());
         }
     }
 
-    public Connection getConnection() {
+    public Connection getMySQLConnection() {
         return connection;
     }
-
+    public MongoDatabase getMongoConnection() {
+        return mongoDatabase;
+    }
     public static void rollback(Connection connection) {
         try {
             Objects.requireNonNull(connection).rollback();

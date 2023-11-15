@@ -3,13 +3,13 @@ package ua.nure.dao;
 import java.util.List;
 
 public interface CRUDRepository<T> {
-    long add(T entity);
+    String add(T entity);
 
     T update(T entity);
 
-    void delete(long id);
+    void delete(String id);
 
-    T findById(long id);
+    T findById(String id);
 
     List<T> findAll();
 }

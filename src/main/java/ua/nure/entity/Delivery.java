@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Delivery {
-    public long order_id;
+    public String order_id;
     private String city;
     private String street;
     private String houseNumber;
@@ -25,7 +25,7 @@ public class Delivery {
     }
 
     public static class Builder {
-        public long order_id = 0;
+        public String order_id;
         private final String city;
         private final String street;
         private final String houseNumber;
@@ -38,7 +38,7 @@ public class Delivery {
             this.houseNumber = houseNumber;
         }
 
-        public Builder setOrder_id(long order_id) {
+        public Builder setOrder_id(String order_id) {
             this.order_id = order_id;
             return this;
         }

@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Clothing {
-    private long id;
+    private String id;
     private String name;
     private Size size;
     private String color;
@@ -34,27 +34,35 @@ public class Clothing {
     }
 
     public static class Builder {
-        private long id = 0;
+        private String id;
         private final String name;
         private final Size size;
         private final String color;
         private final Season season;
-        private final int amount;
-        private final BigDecimal actualPrice;
+        private int amount;
+        private BigDecimal actualPrice;
         private final Sex sex;
 
-        public Builder(String name, Size size, String color, Season season, int amount, BigDecimal actualPrice, Sex sex) {
+        public Builder(String name, Size size, String color, Season season, Sex sex) {
             this.name = name;
             this.size = size;
             this.color = color;
             this.season = season;
-            this.amount = amount;
-            this.actualPrice = actualPrice;
             this.sex = sex;
         }
 
-        public Builder setId(long id) {
+        public Builder setId(String id) {
             this.id = id;
+            return this;
+        }
+
+        public Builder setAmount(int amount) {
+            this.amount = amount;
+            return this;
+        }
+
+        public Builder setActualPrice(BigDecimal actualPrice) {
+            this.actualPrice = actualPrice;
             return this;
         }
 

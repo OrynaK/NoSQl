@@ -2,93 +2,105 @@ package ua.nure.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import ua.nure.entity.enums.Role;
 import ua.nure.entity.enums.Status;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 @Data
 @AllArgsConstructor
 public class Order {
-    private long id;
+    private String id;
     private LocalDateTime dateTime;
     private Status status;
-    private List<ClothingOrder> clothesInOrder;
-    private Map<Role, UserOrder> usersInOrder;
+    private List<Clothing> clothesInOrder;
+    private List<User> usersInOrder;
+    private Delivery delivery;
+    private String description;
 
     public Order() {
         clothesInOrder = new ArrayList<>();
-        usersInOrder = new EnumMap<>(Role.class);
+        usersInOrder = new ArrayList<>();
     }
 
-    public Order(long userId, List<ClothingOrder> clothesInOrder) {
+    public Order(List<Clothing> clothesInOrder, List<User> usersInOrder) {
         this.clothesInOrder = clothesInOrder;
-        this.usersInOrder = new EnumMap<>(Role.class);
-        usersInOrder.put(Role.USER, new UserOrder(userId));
+        this.usersInOrder = usersInOrder;
     }
 
-    public Order(Builder builder) {
+    public Order(Order.Builder builder) {
         this.id = builder.id;
         this.dateTime = builder.dateTime;
         this.status = builder.status;
         this.usersInOrder = builder.usersInOrder;
         this.clothesInOrder = builder.clothesInOrder;
+        this.delivery = builder.delivery;
+        this.description = builder.description;
     }
 
-    public void addClothing(ClothingOrder clothingOrder) {
+    public void addClothing(Clothing clothingOrder) {
         clothesInOrder.add(clothingOrder);
     }
 
-    public void putUser(Role role, UserOrder userOrder) {
-        usersInOrder.put(role, userOrder);
+    public void putUser(User userOrder) {
+        usersInOrder.add(userOrder);
     }
 
     public static class Builder {
-        private long id;
+        private String id;
         private LocalDateTime dateTime;
         private Status status;
-        private List<ClothingOrder> clothesInOrder = new ArrayList<>();
-        private Map<Role, UserOrder> usersInOrder = new EnumMap<>(Role.class);
+        private List<Clothing> clothesInOrder = new ArrayList<>();
+        private List<User> usersInOrder = new ArrayList<>();
+        private Delivery delivery;
+        private String description;
 
         public Builder() {
         }
 
-        public Builder addClothing(ClothingOrder clothingOrder) {
+        public Order.Builder addClothing(Clothing clothingOrder) {
             clothesInOrder.add(clothingOrder);
             return this;
         }
 
-        public Builder putUser(Role role, UserOrder userOrder) {
-            usersInOrder.put(role, userOrder);
+        public Order.Builder putUser(User userOrder) {
+            usersInOrder.add(userOrder);
             return this;
         }
 
-        public Builder setId(long id) {
+        public Order.Builder setId(String id) {
             this.id = id;
             return this;
         }
 
-        public Builder setDateTime(LocalDateTime dateTime) {
+        public Order.Builder setDateTime(LocalDateTime dateTime) {
             this.dateTime = dateTime;
             return this;
         }
 
-        public Builder setStatus(Status status) {
+        public Order.Builder setStatus(Status status) {
             this.status = status;
             return this;
         }
 
-        public Builder setClothesInOrder(List<ClothingOrder> clothesInOrder) {
+        public Order.Builder setClothesInOrder(List<Clothing> clothesInOrder) {
             this.clothesInOrder = clothesInOrder;
             return this;
         }
 
-        public Builder setUsersInOrder(Map<Role, UserOrder> usersInOrder) {
+        public Order.Builder setUsersInOrder(List<User> usersInOrder) {
             this.usersInOrder = usersInOrder;
+            return this;
+        }
+
+        public Order.Builder setDelivery(Delivery delivery) {
+            this.delivery = delivery;
+            return this;
+        }
+
+        public Builder setDescription(String description) {
+            this.description = description;
             return this;
         }
 
@@ -96,9 +108,8 @@ public class Order {
             return new Order(this);
         }
 
-        public long getId() {
+        public String getId() {
             return id;
         }
     }
-
 }

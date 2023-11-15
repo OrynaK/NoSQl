@@ -1,19 +1,17 @@
-package ua.nure.dao.EntityDAOImpl;
+package ua.nure.dao.EntityDAOImpl.mysql;
 
-import ua.nure.dao.ConnectionManager;
 import ua.nure.dao.EntityDAO.UserDAO;
 import ua.nure.entity.User;
-import ua.nure.entity.enums.Role;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserDAOImpl implements UserDAO {
+public class MySQLUserDAOImpl implements UserDAO {
 
-    Connection con;
+    private final Connection con;
 
-    public UserDAOImpl(Connection connection) {
+    public MySQLUserDAOImpl(Connection connection) {
         con = connection;
     }
 
@@ -25,7 +23,7 @@ public class UserDAOImpl implements UserDAO {
     private static final String DELETE = "DELETE FROM user WHERE id=?";
 
     @Override
-    public long add(User user) {
+    public String add(User user) {
         try (PreparedStatement ps = con.prepareStatement(ADD_USER, Statement.RETURN_GENERATED_KEYS)) {
             int k = 0;
             ps.setString(++k, user.getName());
@@ -36,7 +34,7 @@ public class UserDAOImpl implements UserDAO {
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
-                    user.setId(keys.getLong(1));
+                    user.setId(String.valueOf(keys.getInt(1)));
                 }
             }
         } catch (SQLException ex) {
@@ -54,7 +52,7 @@ public class UserDAOImpl implements UserDAO {
             ps.setString(++k, user.getEmail());
             ps.setString(++k, user.getPassword());
             ps.setString(++k, user.getPhone());
-            ps.setLong(++k, user.getId());
+            ps.setLong(++k, Long.parseLong(user.getId()));
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -64,15 +62,15 @@ public class UserDAOImpl implements UserDAO {
 
 
     @Override
-    public void delete(long id) {
+    public void delete(String id) {
         try (PreparedStatement st = con.prepareStatement(FIND_USER_IN_ORDER)) {
-            st.setLong(1, id);
+            st.setLong(1, Long.parseLong(id));
             try (ResultSet resultSet = st.executeQuery()) {
                 if (resultSet.next())
                     throw new SQLException("delete failed. " +
                             "To delete user, please, firstly delete order with this user");
                 try (PreparedStatement statement = con.prepareStatement(DELETE)) {
-                    statement.setLong(1, id);
+                    statement.setLong(1, Long.parseLong(id));
                     statement.executeUpdate();
                 }
             }
@@ -82,11 +80,11 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
-    public User findById(long id) {
+    public User findById(String id) {
         User user = new User();
         try (PreparedStatement ps = con.prepareStatement(GET_USER_BY_ID)) {
             int k = 0;
-            ps.setLong(++k, id);
+            ps.setLong(++k, Long.parseLong(id));
             try (ResultSet resultSet = ps.executeQuery()) {
                 while (resultSet.next()) {
                     user = mapUsers(resultSet);
@@ -101,26 +99,51 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public List<User> findAll() {
         List<User> userList = new ArrayList<>();
-            try (Statement st = con.createStatement()) {
-                try (ResultSet rs = st.executeQuery(GET_ALL_USERS)) {
-                    while (rs.next()) {
-                        userList.add(mapUsers(rs));
-                    }
-                    return userList;
+        try (Statement st = con.createStatement()) {
+            try (ResultSet rs = st.executeQuery(GET_ALL_USERS)) {
+                while (rs.next()) {
+                    userList.add(mapUsers(rs));
                 }
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
+                return userList;
             }
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private User mapUsers(ResultSet rs) throws SQLException {
-       long id = rs.getInt("id");
-        String name =rs.getString("name");
+        String id = rs.getString("id");
+        String name = rs.getString("name");
         String surname = rs.getString("surname");
         String password = rs.getString("password");
         String email = rs.getString("email");
         String role = rs.getString("role").toUpperCase();
         String phone = rs.getString("phone");
-        return new User.Builder(name, surname, email, password, phone).setId(id).setRole(role).build();
+        return new User.Builder(name, surname, email, phone)
+                .setId(id)
+                .setRole(role)
+                .setPassword(password)
+                .build();
     }
+
+    public List<User> findByMultipleKeys(String email, String password) {
+        List<User> users = new ArrayList<>();
+
+        try (PreparedStatement ps = con.prepareStatement("SELECT * FROM `user` WHERE email=? AND password=?")) {
+            int k = 0;
+            ps.setString(++k, email);
+            ps.setString(++k, password);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    users.add(mapUsers(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return users;
+    }
+
 }
