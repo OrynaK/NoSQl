@@ -12,15 +12,15 @@ public class ConnectionProperties {
     private String mongoUri;
     private String mongoDatabaseName;
 
-    public ConnectionProperties() {
-        loadProperties();
+    public ConnectionProperties(String dbType) {
+        loadProperties(dbType);
     }
 
-    private void loadProperties() {
+    private void loadProperties(String dbType) {
         Properties config = new Properties();
+        this.type = dbType;
         try {
             config.load(new FileInputStream("application.properties"));
-            type = config.getProperty("database.type");
             url = config.getProperty("database.url");
             user = config.getProperty("database.user");
             password = config.getProperty("database.password");
@@ -55,6 +55,10 @@ public class ConnectionProperties {
         return mongoUri;
     }
 
+    public ConnectionProperties setType(String type) {
+        this.type = type;
+        return this;
+    }
     @Override
     public String toString() {
         return "ConnectionProperties{" +

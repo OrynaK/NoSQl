@@ -7,24 +7,31 @@ import com.mongodb.client.MongoDatabase;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class ConnectionManager {
-    private static ConnectionManager instance;
+    private static Map<String, ConnectionManager> instances = new HashMap<>();
+
     private Connection connection;
-    private ConnectionProperties properties;
     private MongoDatabase mongoDatabase;
+    private ConnectionProperties properties;
 
     private ConnectionManager(ConnectionProperties properties) {
         this.properties = properties;
     }
 
     public static ConnectionManager getInstance(ConnectionProperties properties) {
-        if (instance == null) {
-            instance = new ConnectionManager(properties);
+        String key = properties.getType() + "_" + properties.getUrl();
+
+        if (!instances.containsKey(key)) {
+            ConnectionManager instance = new ConnectionManager(properties);
             instance.initializeConnection();
+            instances.put(key, instance);
         }
-        return instance;
+
+        return instances.get(key);
     }
 
     private void initializeConnection() {
@@ -35,16 +42,19 @@ public class ConnectionManager {
                 e.printStackTrace();
             }
         } else if ("mongodb".equalsIgnoreCase(properties.getType())) {
-            mongoDatabase = MongoClients.create(properties.getMongoUri()).getDatabase(properties.getMongoDatabaseName());
+            MongoClient mongoClient = MongoClients.create(properties.getMongoUri());
+            mongoDatabase = mongoClient.getDatabase(properties.getMongoDatabaseName());
         }
     }
 
     public Connection getMySQLConnection() {
         return connection;
     }
+
     public MongoDatabase getMongoConnection() {
         return mongoDatabase;
     }
+
     public static void rollback(Connection connection) {
         try {
             Objects.requireNonNull(connection).rollback();

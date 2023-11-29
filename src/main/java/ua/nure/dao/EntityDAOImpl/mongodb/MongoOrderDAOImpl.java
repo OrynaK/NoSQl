@@ -92,11 +92,55 @@ public class MongoOrderDAOImpl implements OrderDAO {
     }
 
     @Override
+    public String addMigration(Order order) {
+        Document orderDocument = new Document();
+        List<User> users = new ArrayList<>();
+        for (User user:order.getUsersInOrder()) {
+            users.add(findByEmail(user.getEmail()));
+        }
+        List<Clothing> clothes = new ArrayList<>();
+        for (Clothing clothing:order.getClothesInOrder()) {
+            clothes.add(findClothing(clothing.getName(), clothing.getSize(), clothing.getColor(), clothing.getSeason(), clothing.getSex()));
+        }
+        orderDocument.append("users", mapUsers(users))
+                .append("status", order.getStatus().toString())
+                .append("clothing", mapClothing(clothes))
+                .append("delivery", mapDelivery(order.getDelivery()))
+                .append("datetime", order.getDateTime());
+
+        collection.insertOne(orderDocument);
+        ObjectId id = orderDocument.getObjectId("_id");
+        return id != null ? id.toString() : null;
+    }
+
+    @Override
     public Order findById(String id) {
         Document filter = new Document("_id", new ObjectId(id));
         Document result = collection.find(filter).first();
         return (result != null) ? mapOrder(result) : null;
     }
+
+    public Clothing findClothing(String name, Size size, String color, Season season, Sex sex) {
+        MongoCollection<Document> orderCollection = connection.getCollection("clothing");
+        Document filter = new Document();
+        filter.append("name", name)
+                .append("size", size.toString())
+                .append("color", color)
+                .append("season", season.toString())
+                .append("sex", sex.toString());
+
+        Document result = orderCollection.find(filter).first();
+        return (result != null) ? mapClothing(result) : null;
+    }
+    public User findByEmail(String email) {
+        MongoCollection<Document> userCollection = connection.getCollection("user");
+
+        Document filter = new Document("email", email);
+        Document result = userCollection.find(filter).first();
+
+        return (result != null) ? mapUser(result) : null;
+    }
+
 
     @Override
     public List<Order> findAll() {
@@ -173,6 +217,29 @@ public class MongoOrderDAOImpl implements OrderDAO {
 
         return order;
     }
+    private User mapUser(Document userDocument) {
+        User user = new User();
+        user.setId(userDocument.getObjectId("_id").toString());
+        user.setName(userDocument.getString("name"));
+        user.setSurname(userDocument.getString("surname"));
+        user.setEmail(userDocument.getString("email"));
+        user.setPhone(userDocument.getString("phone"));
+        user.setRole(Role.valueOf(userDocument.getString("role")));
+        return user;
+    }
+    private Clothing mapClothing(Document clothingDocument) {
+        Clothing clothing = new Clothing();
+        clothing.setId(clothingDocument.getObjectId("_id").toString());
+        clothing.setName(clothingDocument.getString("name"));
+        clothing.setSize(Size.valueOf(clothingDocument.getString("size")));
+        clothing.setColor(clothingDocument.getString("color"));
+        clothing.setSeason(Season.valueOf(clothingDocument.getString("season")));
+        clothing.setSex(Sex.valueOf(clothingDocument.getString("sex")));
+        clothing.setActualPrice(convertDecimal128ToBigDecimal(clothingDocument.get("actual_price", Decimal128.class)));
+        clothing.setAmount(clothingDocument.getInteger("amount"));
+
+        return clothing;
+    }
 
     private Document mapOrder(Order order) {
         Document orderDocument = new Document();
@@ -221,6 +288,7 @@ public class MongoOrderDAOImpl implements OrderDAO {
             user.setName(userDocument.getString("name"));
             user.setSurname(userDocument.getString("surname"));
             user.setEmail(userDocument.getString("email"));
+            user.setPhone(userDocument.getString("phone"));
             users.add(user);
         }
 

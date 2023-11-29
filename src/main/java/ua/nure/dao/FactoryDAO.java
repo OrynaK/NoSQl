@@ -17,8 +17,8 @@ public class FactoryDAO implements Factory {
     private ConnectionManager connectionManager;
     private ConnectionProperties connectionProperties;
 
-    public FactoryDAO() {
-        connectionProperties = new ConnectionProperties();
+    public FactoryDAO(String dbType) {
+        connectionProperties = new ConnectionProperties(dbType);
         connectionManager = ConnectionManager.getInstance(connectionProperties);
     }
 

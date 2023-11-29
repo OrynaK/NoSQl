@@ -18,16 +18,71 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        Factory factory = new FactoryDAO();
+        Factory factory = new FactoryDAO("mongodb");
         UserDAO userDAO = factory.getUserDAO();
         ClothingDAO clothingDAO = factory.getClothingDAO();
         OrderDAO orderDAO = factory.getOrderDAO();
+        Factory factory2 = new FactoryDAO("mysql");
+        ClothingDAO clothingDAO2 = factory2.getClothingDAO();
+        UserDAO userDAO2 = factory2.getUserDAO();
+        OrderDAO orderDAO2 = factory2.getOrderDAO();
+
+        //delete
+        List<Clothing> clothesDelete = clothingDAO2.findAll();
+        for (Clothing clothing : clothesDelete) {
+            clothingDAO2.delete(clothing.getId());
+        }
+        List<User> usersDelete = userDAO2.findAll();
+        for (User user : usersDelete) {
+            userDAO2.delete(user.getId());
+        }
+        List<Order> ordersDelete = orderDAO2.findAll();
+        for (Order order : ordersDelete) {
+            orderDAO2.delete(order.getId());
+        }
+
+        // add
+        List<Clothing> clothes = clothingDAO.findAll();
+        for (Clothing clothing : clothes) {
+            clothingDAO2.add(clothing);
+        }
+        List<User> users = userDAO.findAll();
+        for (User user : users) {
+            userDAO2.add(user);
+        }
+        List<Order> orders = orderDAO.findAll();
+        for (Order order : orders) {
+            orderDAO2.addMigration(order);
+        }
 
 //        System.out.println("---TEST FIND BY ID---");
 //        System.out.println("Clothing with id=6550fafe473c391a243b5149: " + clothingDAO.findById("6550fafe473c391a243b5149"));
 //        System.out.println("User with id=6554ce327192941e8a6f042f: " + userDAO.findById("6554ce327192941e8a6f042f"));
 //        System.out.println("Order with id=6555070bd50764e3c8bb7c7b: " + orderDAO.findById("6555070bd50764e3c8bb7c7b"));
+//        Clothing insertClothing = clothingDAO.findById("6550fafe473c391a243b5149");
+//        User insertUser = userDAO.findById("6554ce327192941e8a6f042f");
+//        Order insertOrder = orderDAO.findById("6555070bd50764e3c8bb7c7b");
 //
+//
+//        System.out.println(clothingDAO2.findAll());
+//        clothingDAO2.add(insertClothing);
+//        System.out.println(clothingDAO2.findAll());
+//
+//        System.out.println(userDAO2.findAll());
+//        userDAO2.add(insertUser);
+//        System.out.println(userDAO2.findAll());
+//
+//        List<Order> orders = orderDAO2.findAll();
+//        System.out.println("Order:");
+//        for (Order order : orders) {
+//            System.out.println(order);
+//        }
+//        orderDAO2.addMigration(insertOrder);
+//        orders = orderDAO2.findAll();
+//        System.out.println("Order:");
+//        for (Order order : orders) {
+//            System.out.println(order);
+//        }
 //        System.out.println("---TEST FIND BY MULTIPLY KEYS---");
 //        List<User> userList = userDAO.findByMultipleKeys("oleg@example.com", "пароль789");
 //        System.out.println("Users:");

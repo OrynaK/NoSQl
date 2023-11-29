@@ -12,4 +12,5 @@ public interface OrderDAO extends CRUDRepository<Order> {
     List<Order> getOrdersByUserId(String userId);
     void updateStatus(String orderId, Status status);
     List<Order> findByMultipleKeys(Status status, LocalDateTime dateTime);
+    String addMigration(Order order);
 }

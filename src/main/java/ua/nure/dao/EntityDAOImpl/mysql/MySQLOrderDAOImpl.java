@@ -128,6 +128,59 @@ public class MySQLOrderDAOImpl implements OrderDAO {
         }
     }
 
+    public String addMigration(Order order) {
+        try {
+            con.setAutoCommit(false);
+            try (PreparedStatement ps = con.prepareStatement(INSERT_ORDER, Statement.RETURN_GENERATED_KEYS)) {
+                ps.executeUpdate();
+                ResultSet generatedKeys = ps.getGeneratedKeys();
+                try (PreparedStatement s = con.prepareStatement(INSERT_CLOTHING_ORDER)) {
+                    if (generatedKeys.next()) {
+                        con.commit();
+                        order.setId(String.valueOf(generatedKeys.getLong(1)));
+                        for (Clothing clothingOrder : order.getClothesInOrder()) {
+                            int k = 0;
+                            s.setLong(++k, Long.parseLong(findClothingByMultipleKeys(clothingOrder.getName(), clothingOrder.getSize(), clothingOrder.getColor(), clothingOrder.getSeason(), clothingOrder.getAmount(), clothingOrder.getActualPrice(), clothingOrder.getSex())));
+                            s.setLong(++k, Long.parseLong(order.getId()));
+                            s.setInt(++k, clothingOrder.getAmount());
+                            s.setBigDecimal(++k, clothingOrder.getActualPrice());
+                            s.addBatch();
+                        }
+                        s.executeBatch();
+                        try (PreparedStatement prs = con.prepareStatement(INSERT_ORDER_USER)) {
+                            for (User user : order.getUsersInOrder()) {
+                                prs.setLong(1, Long.parseLong(order.getId()));
+                                prs.setLong(2, Long.parseLong(findUserByMultipleKeys(user.getEmail())));
+                                prs.setString(3, order.getDescription());
+                                prs.addBatch();
+                            }
+                            try (PreparedStatement pps = con.prepareStatement("INSERT INTO delivery (order_id, city, street, house_number, entrance, apartment_number) values (?, ?, ?, ?, ?, ?)")) {
+                                pps.setLong(1, Long.parseLong(order.getId()));
+                                pps.setString(2, order.getDelivery().getCity());
+                                pps.setString(3, order.getDelivery().getStreet());
+                                pps.setString(4, order.getDelivery().getHouseNumber());
+                                pps.setInt(5, order.getDelivery().getEntrance());
+                                pps.setInt(6, order.getDelivery().getApartmentNumber());
+
+                                pps.executeUpdate();
+                            }
+                            if (prs.executeBatch().length != 0) {
+                                con.commit();
+                            } else {
+                                con.rollback();
+                            }
+                        }
+                    } else {
+                        con.rollback();
+                    }
+                }
+            }
+            return order.getId();
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     @Override
     public Order findById(String orderId) {
         Order.Builder orderBuilder = new Order.Builder();
@@ -274,6 +327,47 @@ public class MySQLOrderDAOImpl implements OrderDAO {
         }
     }
 
+    public String findUserByMultipleKeys(String email) {
+        User user = new User();
+
+        try (PreparedStatement ps = con.prepareStatement("SELECT * FROM `user` WHERE email=?")) {
+            int k = 0;
+            ps.setString(++k, email);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    user = mapUser(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return user.getId();
+    }
+
+    public String findClothingByMultipleKeys(String name, Size size, String color, Season season, int amount, BigDecimal actual_price, Sex sex) {
+        Clothing clothing = new Clothing();
+        try (PreparedStatement ps = con.prepareStatement("SELECT * FROM `clothing` WHERE name=? AND size=? AND color = ? AND season = ? AND amount = ? AND actual_price = ? AND sex = ?")) {
+            int k = 0;
+            ps.setString(++k, name);
+            ps.setString(++k, String.valueOf(size).toUpperCase());
+            ps.setString(++k, color);
+            ps.setString(++k, String.valueOf(season).toUpperCase());
+            ps.setInt(++k, amount);
+            ps.setBigDecimal(++k, actual_price);
+            ps.setString(++k, String.valueOf(sex).toUpperCase());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    clothing = mapClothing(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return clothing.getId();
+    }
 
     private Role getRole(Long id) {
         Role role = null;

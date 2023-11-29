@@ -81,20 +81,6 @@ public class MongoClothingDAOImpl implements ClothingDAO {
         collection.find().iterator().forEachRemaining(document -> clothingList.add(mapClothing(document)));
         return clothingList;
     }
-    @Override
-    public List<Clothing> getClothingBySize(Size size) {
-        Document filter = new Document("size", size.toString().toUpperCase());
-        List<Clothing> clothingList = new ArrayList<>();
-        collection.find(filter).iterator().forEachRemaining(document -> clothingList.add(mapClothing(document)));
-        return clothingList;
-    }
-    @Override
-    public void updateClothingAmount(String clothingId, int amount) {
-        Document filter = new Document("_id", new ObjectId(clothingId));
-        Document updateDoc = new Document("$set", new Document("amount", amount));
-
-        collection.updateOne(filter, updateDoc);
-    }
 
     @Override
     public List<Clothing> findByMultipleKeys(String name, Size size, String color) {
@@ -113,7 +99,20 @@ public class MongoClothingDAOImpl implements ClothingDAO {
 
         return clothingList;
     }
+    @Override
+    public List<Clothing> getClothingBySize(Size size) {
+        Document filter = new Document("size", size.toString().toUpperCase());
+        List<Clothing> clothingList = new ArrayList<>();
+        collection.find(filter).iterator().forEachRemaining(document -> clothingList.add(mapClothing(document)));
+        return clothingList;
+    }
+    @Override
+    public void updateClothingAmount(String clothingId, int amount) {
+        Document filter = new Document("_id", new ObjectId(clothingId));
+        Document updateDoc = new Document("$set", new Document("amount", amount));
 
+        collection.updateOne(filter, updateDoc);
+    }
 
     private Clothing mapClothing(Document document) {
         String id = document.getObjectId("_id").toString();
