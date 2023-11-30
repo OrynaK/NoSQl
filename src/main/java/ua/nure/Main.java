@@ -1,5 +1,7 @@
 package ua.nure;
 
+import com.mongodb.connection.ClusterDescription;
+import com.mongodb.connection.ServerDescription;
 import ua.nure.dao.EntityDAO.ClothingDAO;
 import ua.nure.dao.EntityDAO.OrderDAO;
 import ua.nure.dao.EntityDAO.UserDAO;
@@ -22,39 +24,39 @@ public class Main {
         UserDAO userDAO = factory.getUserDAO();
         ClothingDAO clothingDAO = factory.getClothingDAO();
         OrderDAO orderDAO = factory.getOrderDAO();
-        Factory factory2 = new FactoryDAO("mysql");
-        ClothingDAO clothingDAO2 = factory2.getClothingDAO();
-        UserDAO userDAO2 = factory2.getUserDAO();
-        OrderDAO orderDAO2 = factory2.getOrderDAO();
+//        Factory factory2 = new FactoryDAO("mysql");
+//        ClothingDAO clothingDAO2 = factory2.getClothingDAO();
+//        UserDAO userDAO2 = factory2.getUserDAO();
+//        OrderDAO orderDAO2 = factory2.getOrderDAO();
 
-        //delete
-        List<Clothing> clothesDelete = clothingDAO2.findAll();
-        for (Clothing clothing : clothesDelete) {
-            clothingDAO2.delete(clothing.getId());
-        }
-        List<User> usersDelete = userDAO2.findAll();
-        for (User user : usersDelete) {
-            userDAO2.delete(user.getId());
-        }
-        List<Order> ordersDelete = orderDAO2.findAll();
-        for (Order order : ordersDelete) {
-            orderDAO2.delete(order.getId());
-        }
+
+//        //delete
+//        List<Clothing> clothesDelete = clothingDAO2.findAll();
+//        for (Clothing clothing : clothesDelete) {
+//            clothingDAO2.delete(clothing.getId());
+//        }
+//        List<User> usersDelete = userDAO2.findAll();
+//        for (User user : usersDelete) {
+//            userDAO2.delete(user.getId());
+//        }
+//        List<Order> ordersDelete = orderDAO2.findAll();
+//        for (Order order : ordersDelete) {
+//            orderDAO2.delete(order.getId());
+//        }
 
         // add
-        List<Clothing> clothes = clothingDAO.findAll();
-        for (Clothing clothing : clothes) {
-            clothingDAO2.add(clothing);
-        }
-        List<User> users = userDAO.findAll();
-        for (User user : users) {
-            userDAO2.add(user);
-        }
-        List<Order> orders = orderDAO.findAll();
-        for (Order order : orders) {
-            orderDAO2.addMigration(order);
-        }
-
+//        List<Clothing> clothes = clothingDAO.findAll();
+//        for (Clothing clothing : clothes) {
+//            clothingDAO2.add(clothing);
+//        }
+//        List<User> users = userDAO.findAll();
+//        for (User user : users) {
+//            userDAO2.add(user);
+//        }
+//        List<Order> orders = orderDAO.findAll();
+//        for (Order order : orders) {
+//            orderDAO2.addMigration(order);
+//        }
 //        System.out.println("---TEST FIND BY ID---");
 //        System.out.println("Clothing with id=6550fafe473c391a243b5149: " + clothingDAO.findById("6550fafe473c391a243b5149"));
 //        System.out.println("User with id=6554ce327192941e8a6f042f: " + userDAO.findById("6554ce327192941e8a6f042f"));
@@ -105,16 +107,24 @@ public class Main {
 //        }
 //
 //
-//        System.out.println("---TEST ADD---");
+        System.out.println("---TEST ADD---");
 //        User newUser = new User.Builder("тест", "тест", "тест", "тест")
 //                .setPassword("тест")
 //                .build();
 //        System.out.println("Вставлений користувач: " + userDAO.findById(userDAO.add(newUser)));
 //
-//        Clothing newClothing = new Clothing.Builder("тест", Size.XS, "тест", Season.WINTER, Sex.MALE)
-//                .setAmount(1)
-//                .setActualPrice(new BigDecimal(17))
-//                .build();
+        Clothing newClothing = new Clothing.Builder("тест", Size.XS, "тест", Season.WINTER, Sex.MALE)
+                .setAmount(1)
+                .setActualPrice(new BigDecimal(17))
+                .build();
+        clothingDAO.add(newClothing);
+        for (int i = 0; i < 10000; i++) {
+            clothingDAO.add(newClothing);
+        }
+        List<Clothing> clothes = clothingDAO.findAll();
+//        System.out.println(clothes);
+        System.out.println("Read " + clothes.size() + " clothing items successfully.");
+
 //        System.out.println("Вставлена одежа: " + clothingDAO.findById(clothingDAO.add(newClothing)));
 //
 //        Delivery newDelivery = new Delivery.Builder("тест", "тест", "тест")

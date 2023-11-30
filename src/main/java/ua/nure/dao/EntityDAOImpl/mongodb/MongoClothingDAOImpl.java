@@ -1,6 +1,8 @@
 package ua.nure.dao.EntityDAOImpl.mongodb;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.ReadConcern;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -19,7 +21,10 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class MongoClothingDAOImpl implements ClothingDAO {
+    private static final int MAX_RETRIES = 3;
+    private static final long RETRY_DELAY_MS = 1000;
     private final MongoDatabase connection;
     private final MongoCollection<Document> collection;
     private static final String COLLECTION_NAME = "clothing";
@@ -40,11 +45,37 @@ public class MongoClothingDAOImpl implements ClothingDAO {
                 .append("actual_price", clothing.getActualPrice())
                 .append("sex", clothing.getSex().toString().toUpperCase());
 
-        collection.insertOne(clothingDoc);
+        int retries = 0;
+        boolean success = false;
+        ObjectId id = null;
 
-        ObjectId id = clothingDoc.getObjectId("_id");
+        while (retries < MAX_RETRIES && !success) {
+            try {
+                collection.withWriteConcern(WriteConcern.JOURNALED);
+                collection.insertOne(clothingDoc);
+
+                id = clothingDoc.getObjectId("_id");
+                success = true;
+            } catch (Exception e) {
+                try {
+                    Thread.sleep(RETRY_DELAY_MS);
+                } catch (InterruptedException interruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                retries++;
+                System.err.println("Error writing to database. Retrying... Attempt " + retries);
+            }
+        }
+
+        if (!success) {
+            System.err.println("Failed to write to database after " + MAX_RETRIES + " attempts. Aborting.");
+            return null;
+        }
+
         return id != null ? id.toString() : null;
     }
+
+
 
     @Override
     public Clothing update(Clothing clothing) {
@@ -81,6 +112,7 @@ public class MongoClothingDAOImpl implements ClothingDAO {
         collection.find().iterator().forEachRemaining(document -> clothingList.add(mapClothing(document)));
         return clothingList;
     }
+
 
     @Override
     public List<Clothing> findByMultipleKeys(String name, Size size, String color) {

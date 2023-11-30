@@ -1,8 +1,12 @@
 package ua.nure.dao;
 
+import com.mongodb.MongoException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.ConnectionString;
+import com.mongodb.connection.ClusterDescription;
+import com.mongodb.connection.ServerDescription;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -42,9 +46,33 @@ public class ConnectionManager {
                 e.printStackTrace();
             }
         } else if ("mongodb".equalsIgnoreCase(properties.getType())) {
-            MongoClient mongoClient = MongoClients.create(properties.getMongoUri());
-            mongoDatabase = mongoClient.getDatabase(properties.getMongoDatabaseName());
+            if (properties.getReplicaSetHosts().length > 0) {
+                initializeMongoReplicaSetConnection();
+            } else {
+                initializeMongoSingleConnection();
+            }
         }
+    }
+
+    private void initializeMongoSingleConnection() {
+        MongoClient mongoClient = MongoClients.create(properties.getMongoUri());
+        mongoDatabase = mongoClient.getDatabase(properties.getMongoDatabaseName());
+    }
+
+    private void initializeMongoReplicaSetConnection() {
+        String connectionString = buildReplicaSetConnectionString(properties.getReplicaSetHosts(), properties.getMongoDatabaseName());
+        MongoClient mongoClient = MongoClients.create(connectionString);
+        mongoDatabase = mongoClient.getDatabase(properties.getMongoDatabaseName());
+    }
+
+    private String buildReplicaSetConnectionString(String[] hosts, String databaseName) {
+        StringBuilder connectionString = new StringBuilder("mongodb://");
+        for (String host : hosts) {
+            connectionString.append(host).append(",");
+        }
+        connectionString.deleteCharAt(connectionString.length() - 1); // Remove the trailing comma
+        connectionString.append("/").append(databaseName);
+        return connectionString.toString();
     }
 
     public Connection getMySQLConnection() {
