@@ -2,6 +2,7 @@ package ua.nure.dao.EntityDAOImpl.mongodb;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoException;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -16,6 +17,7 @@ import ua.nure.entity.User;
 import ua.nure.entity.enums.Role;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MongoUserDAOImpl implements UserDAO {
@@ -114,4 +116,7 @@ public class MongoUserDAOImpl implements UserDAO {
 
         return userList;
     }
+
+
+
 }

@@ -46,11 +46,11 @@ public class ConnectionManager {
                 e.printStackTrace();
             }
         } else if ("mongodb".equalsIgnoreCase(properties.getType())) {
-            if (properties.getReplicaSetHosts().length > 0) {
-                initializeMongoReplicaSetConnection();
-            } else {
+            //if (properties.getReplicaSetHosts().length > 0) {
+             //   initializeMongoReplicaSetConnection();
+            //} else {
                 initializeMongoSingleConnection();
-            }
+            //}
         }
     }
 

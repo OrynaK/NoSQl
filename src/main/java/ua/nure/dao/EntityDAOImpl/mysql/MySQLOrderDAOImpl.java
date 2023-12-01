@@ -1,5 +1,6 @@
 package ua.nure.dao.EntityDAOImpl.mysql;
 
+import org.bson.Document;
 import ua.nure.dao.EntityDAO.OrderDAO;
 import ua.nure.entity.*;
 import ua.nure.entity.enums.*;
@@ -70,6 +71,13 @@ public class MySQLOrderDAOImpl implements OrderDAO {
             }
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
+        }
+        finally {
+            try {
+                con.setAutoCommit(true);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -179,6 +187,16 @@ public class MySQLOrderDAOImpl implements OrderDAO {
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    @Override
+    public List<Document> aggregateOrderTotalByUser() {
+        return null;
+    }
+
+    @Override
+    public List<Document> getOrderTotalByUser() {
+        return null;
     }
 
     @Override

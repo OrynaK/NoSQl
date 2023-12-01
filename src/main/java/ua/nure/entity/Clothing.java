@@ -67,7 +67,7 @@ public class Clothing {
         }
 
         public Clothing build() {
-            if (name == null || size == null || color == null || season == null || amount < 0 || actualPrice == null || sex == null) {
+            if (name == null || size == null || color == null || season == null  || sex == null) {
                 throw new IllegalStateException("Can`t create Clothing without enough parameters");
             }
             return new Clothing(this);

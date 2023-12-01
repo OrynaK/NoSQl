@@ -12,9 +12,7 @@ import ua.nure.entity.enums.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -95,11 +93,11 @@ public class MongoOrderDAOImpl implements OrderDAO {
     public String addMigration(Order order) {
         Document orderDocument = new Document();
         List<User> users = new ArrayList<>();
-        for (User user:order.getUsersInOrder()) {
+        for (User user : order.getUsersInOrder()) {
             users.add(findByEmail(user.getEmail()));
         }
         List<Clothing> clothes = new ArrayList<>();
-        for (Clothing clothing:order.getClothesInOrder()) {
+        for (Clothing clothing : order.getClothesInOrder()) {
             clothes.add(findClothing(clothing.getName(), clothing.getSize(), clothing.getColor(), clothing.getSeason(), clothing.getSex()));
         }
         orderDocument.append("users", mapUsers(users))
@@ -132,6 +130,7 @@ public class MongoOrderDAOImpl implements OrderDAO {
         Document result = orderCollection.find(filter).first();
         return (result != null) ? mapClothing(result) : null;
     }
+
     public User findByEmail(String email) {
         MongoCollection<Document> userCollection = connection.getCollection("user");
 
@@ -217,6 +216,7 @@ public class MongoOrderDAOImpl implements OrderDAO {
 
         return order;
     }
+
     private User mapUser(Document userDocument) {
         User user = new User();
         user.setId(userDocument.getObjectId("_id").toString());
@@ -227,6 +227,7 @@ public class MongoOrderDAOImpl implements OrderDAO {
         user.setRole(Role.valueOf(userDocument.getString("role")));
         return user;
     }
+
     private Clothing mapClothing(Document clothingDocument) {
         Clothing clothing = new Clothing();
         clothing.setId(clothingDocument.getObjectId("_id").toString());
@@ -321,5 +322,67 @@ public class MongoOrderDAOImpl implements OrderDAO {
         deliveryDocument.append("apartment_number", delivery.getApartmentNumber());
         return deliveryDocument;
     }
+
+    public List<Document> aggregateOrderTotalByUser() {
+
+        List<Document> results = new ArrayList<>();
+
+        List<Document> pipeline = Arrays.asList(
+                new Document("$unwind", "$users"),  // Розгортання масиву "users"
+                new Document("$group", new Document("_id", "$users._id")
+                        .append("userName", new Document("$first", "$users.name"))
+                        .append("userSurname", new Document("$first", "$users.surname"))
+                        .append("orderCount", new Document("$sum", 1))),
+                new Document("$project", new Document("_id", 0)
+                        .append("userId", "$_id")
+                        .append("userName", 1)
+                        .append("userSurname", 1)
+                        .append("orderCount", 1))
+        );
+
+        AggregateIterable<Document> resultIterable = collection.aggregate(pipeline);
+
+        for (Document orderCount : resultIterable) {
+            results.add(orderCount);
+        }
+
+        return results;
+
+
+    }
+
+    public List<Document> getOrderTotalByUser() {
+        List<Document> results = new ArrayList<>();
+
+        Map<String, Document> userOrderCountMap = new HashMap<>();
+
+        FindIterable<Document> orderIterable = collection.find();
+        for (Document order : orderIterable) {
+            List<Document> users = (List<Document>) order.get("users");
+            if (users != null && !users.isEmpty()) {
+                Document user = users.get(0);
+                String userId = user.getObjectId("_id").toString();
+                String userName = user.getString("name");
+                String userSurname = user.getString("surname");
+
+                userOrderCountMap.compute(userId, (key, existingUser) -> {
+                    if (existingUser == null) {
+                        return new Document("userId", userId)
+                                .append("userName", userName)
+                                .append("userSurname", userSurname)
+                                .append("orderCount", 1);
+                    } else {
+                        existingUser.put("orderCount", existingUser.getInteger("orderCount") + 1);
+                        return existingUser;
+                    }
+                });
+            }
+        }
+
+        results.addAll(userOrderCountMap.values());
+
+        return results;
+    }
+
 
 }

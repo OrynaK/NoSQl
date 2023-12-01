@@ -1,25 +1,22 @@
 package ua.nure.dao.EntityDAOImpl.mongodb;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.ReadConcern;
-import com.mongodb.WriteConcern;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
 import ua.nure.dao.EntityDAO.ClothingDAO;
 import ua.nure.entity.Clothing;
-import ua.nure.entity.User;
 import ua.nure.entity.enums.Season;
 import ua.nure.entity.enums.Sex;
 import ua.nure.entity.enums.Size;
 
-import java.awt.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import static com.mongodb.client.model.Filters.eq;
 
 
 public class MongoClothingDAOImpl implements ClothingDAO {
@@ -51,7 +48,7 @@ public class MongoClothingDAOImpl implements ClothingDAO {
 
         while (retries < MAX_RETRIES && !success) {
             try {
-                collection.withWriteConcern(WriteConcern.JOURNALED);
+//                collection.withWriteConcern(WriteConcern.JOURNALED);
                 collection.insertOne(clothingDoc);
 
                 id = clothingDoc.getObjectId("_id");
@@ -131,6 +128,102 @@ public class MongoClothingDAOImpl implements ClothingDAO {
 
         return clothingList;
     }
+    public List<Document> aggregationShowClothing() {
+        List<Document> results = new ArrayList<>();
+
+        List<Document> pipeline = Arrays.asList(
+                new Document("$project", new Document ("_id", 0).append("name", 1)
+                        .append("size", 1)
+                        .append("color", 1)
+                        .append("season", 1)
+                        .append("sex", 1))
+        );
+
+        AggregateIterable<Document> resultIterable = collection.aggregate(pipeline);
+
+        for (Document document : resultIterable) {
+            results.add(document);
+        }
+
+        return results;
+    }
+    public List<Document> showClothing() {
+        List<Document> results = new ArrayList<>();
+
+        FindIterable<Document> clothingIterable = collection.find();
+
+        for (Document clothing : clothingIterable) {
+            Document resultClothing = new Document("_id", 0)
+                    .append("name", clothing.getString("name"))
+                    .append("size", clothing.getString("size"))
+                    .append("color", clothing.getString("color"))
+                    .append("season", clothing.getString("season"))
+                    .append("sex", clothing.getString("sex"));
+
+            results.add(resultClothing);
+        }
+
+        return results;
+    }
+
+    public List<Document> aggregationFilterBySeason(Season targetSeason) {
+        List<Document> results = new ArrayList<>();
+
+        List<Document> pipeline = Arrays.asList(
+                new Document("$match", new Document("season", targetSeason.toString())),  // Фільтр за умовою
+                new Document("$project", new Document("_id", 0))  // Виключити поле "_id" з результатів
+        );
+
+        AggregateIterable<Document> resultIterable = collection.aggregate(pipeline);
+
+        for (Document document : resultIterable) {
+            results.add(document);
+        }
+
+        return results;
+    }
+    public List<Document> filterBySeason(Season targetSeason) {
+        List<Document> results = new ArrayList<>();
+
+        FindIterable<Document> clothingIterable = collection.find(eq("season", targetSeason.toString()));
+
+        for (Document clothing : clothingIterable) {
+            clothing.remove("_id"); // Видалити поле "_id" з результатів
+            results.add(clothing);
+        }
+
+        return results;
+    }
+
+    public List<Document> aggregateGroupBySize() {
+        List<Document> results = new ArrayList<>();
+
+        List<Document> pipeline = Arrays.asList(
+                new Document("$group", new Document("_id", "$size").append("totalAmount", new Document("$sum", "$amount")))
+        );
+
+        AggregateIterable<Document> resultIterable = collection.aggregate(pipeline);
+
+        for (Document document : resultIterable) {
+            results.add(document);
+        }
+
+        return results;
+    }
+    public List<Document> groupBySize() {
+        List<Document> results = new ArrayList<>();
+
+        DistinctIterable<String> distinctSizes = collection.distinct("size", String.class);
+
+        for (String size : distinctSizes) {
+            int totalAmount = (int) collection.countDocuments(eq("size", size));
+            Document resultDocument = new Document("_id", size).append("totalAmount", totalAmount);
+            results.add(resultDocument);
+        }
+
+        return results;
+    }
+
     @Override
     public List<Clothing> getClothingBySize(Size size) {
         Document filter = new Document("size", size.toString().toUpperCase());
@@ -164,5 +257,46 @@ public class MongoClothingDAOImpl implements ClothingDAO {
     }
     private BigDecimal convertDecimal128ToBigDecimal(Decimal128 decimal128) {
         return (decimal128 != null) ? decimal128.bigDecimalValue() : null;
+    }
+
+    public List<Document> aggregationAveragePricePerSize() {
+        List<Document> results = new ArrayList<>();
+
+        List<Document> pipeline = Arrays.asList(
+                new Document("$group", new Document("_id", "$size")
+                        .append("averagePrice", new Document("$avg", "$actual_price"))
+                )
+        );
+
+        AggregateIterable<Document> resultIterable = collection.aggregate(pipeline);
+
+        for (Document document : resultIterable) {
+            results.add(document);
+        }
+
+        return results;
+    }
+    public List<Document> averagePricePerSize() {
+        List<Document> results = new ArrayList<>();
+
+        DistinctIterable<String> distinctSizes = collection.distinct("size", String.class);
+
+        for (String size : distinctSizes) {
+            List<Document> sizeDocuments = collection.find(eq("size", size)).into(new ArrayList<>());
+
+            double totalActualPrice = 0.0;
+            int documentCount = sizeDocuments.size();
+
+            for (Document document : sizeDocuments) {
+                totalActualPrice += ((Number) document.get("actual_price")).doubleValue();
+            }
+
+            double averagePrice = documentCount > 0 ? totalActualPrice / documentCount : 0.0;
+
+            Document resultDocument = new Document("_id", size).append("averagePrice", averagePrice);
+            results.add(resultDocument);
+        }
+
+        return results;
     }
 }

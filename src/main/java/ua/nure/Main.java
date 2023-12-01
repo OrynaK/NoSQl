@@ -1,7 +1,6 @@
 package ua.nure;
 
-import com.mongodb.connection.ClusterDescription;
-import com.mongodb.connection.ServerDescription;
+import org.bson.Document;
 import ua.nure.dao.EntityDAO.ClothingDAO;
 import ua.nure.dao.EntityDAO.OrderDAO;
 import ua.nure.dao.EntityDAO.UserDAO;
@@ -15,22 +14,97 @@ import ua.nure.entity.enums.*;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        Factory factory = new FactoryDAO("mongodb");
+        Factory factory = new FactoryDAO("mysql");
         UserDAO userDAO = factory.getUserDAO();
         ClothingDAO clothingDAO = factory.getClothingDAO();
         OrderDAO orderDAO = factory.getOrderDAO();
-//        Factory factory2 = new FactoryDAO("mysql");
-//        ClothingDAO clothingDAO2 = factory2.getClothingDAO();
-//        UserDAO userDAO2 = factory2.getUserDAO();
-//        OrderDAO orderDAO2 = factory2.getOrderDAO();
+        Factory factory2 = new FactoryDAO("mongodb");
+        ClothingDAO clothingDAO2 = factory2.getClothingDAO();
+        UserDAO userDAO2 = factory2.getUserDAO();
+        OrderDAO orderDAO2 = factory2.getOrderDAO();
+
+        long startTime = System.currentTimeMillis();
+        List<Document> clothes = clothingDAO2.aggregationShowClothing();
+        long endTime = System.currentTimeMillis();
+//        for (Document document : clothes) {
+//            System.out.println(document.toJson());
+//        }
+        System.out.println("Query with aggregation: " + (endTime - startTime));
+        startTime = System.currentTimeMillis();
+        clothes = clothingDAO2.showClothing();
+        endTime = System.currentTimeMillis();
+//        for (Document document : clothes) {
+//            System.out.println(document.toJson());
+//        }
+        System.out.println("Query without aggregation: " + (endTime - startTime));
+
+        startTime = System.currentTimeMillis();
+        List<Document> result = clothingDAO2.aggregateGroupBySize();
+        endTime = System.currentTimeMillis();
+//        for (Document document : result) {
+//            System.out.println(document.toJson());
+//        }
+        System.out.println("Query with aggregation: " + (endTime - startTime));
+        startTime = System.currentTimeMillis();
+        result = clothingDAO2.groupBySize();
+        endTime = System.currentTimeMillis();
+//        for (Document document : result) {
+//            System.out.println(document.toJson());
+//        }
+        System.out.println("Query without aggregation: " + (endTime - startTime));
+
+        startTime = System.currentTimeMillis();
+        List<Document> result1 = clothingDAO2.aggregationFilterBySeason(Season.SUMMER);
+        endTime = System.currentTimeMillis();
+//        for (Document document : result1) {
+//            System.out.println(document.toJson());
+//        }
+        System.out.println("Query with aggregation: " + (endTime - startTime));
+        startTime = System.currentTimeMillis();
+        result1 = clothingDAO2.filterBySeason(Season.SUMMER);
+        endTime = System.currentTimeMillis();
+//        for (Document document : result1) {
+//            System.out.println(document.toJson());
+//        }
+        System.out.println("Query without aggregation: " + (endTime - startTime));
+
+        startTime = System.currentTimeMillis();
+        List<Document> clothes2 = clothingDAO2.aggregationAveragePricePerSize();
+        endTime = System.currentTimeMillis();
+//        for (Document orderCount : clothes2) {
+//            System.out.println(orderCount.toJson());
+//        }
+        System.out.println("Query with aggregation: " + (endTime - startTime));
+        startTime = System.currentTimeMillis();
+        clothes2 = clothingDAO2.averagePricePerSize();
+        endTime = System.currentTimeMillis();
+//        for (Document orderCount : clothes2) {
+//            System.out.println(orderCount.toJson());
+//        }
+        System.out.println("Query without aggregation: " + (endTime - startTime));
+
+        startTime = System.currentTimeMillis();
+        List<Document> order = orderDAO2.aggregateOrderTotalByUser();
+        endTime = System.currentTimeMillis();
+//        for (Document orderCount : order) {
+//            System.out.println(orderCount.toJson());
+//        }
+        System.out.println("Query with aggregation: " + (endTime - startTime));
+        startTime = System.currentTimeMillis();
+        order = orderDAO2.getOrderTotalByUser();
+        endTime = System.currentTimeMillis();
+//        for (Document orderCount : order) {
+//            System.out.println(orderCount.toJson());
+//        }
+        System.out.println("Query without aggregation: " + (endTime - startTime));
 
 
-//        //delete
+        //delete
 //        List<Clothing> clothesDelete = clothingDAO2.findAll();
 //        for (Clothing clothing : clothesDelete) {
 //            clothingDAO2.delete(clothing.getId());
@@ -43,8 +117,8 @@ public class Main {
 //        for (Order order : ordersDelete) {
 //            orderDAO2.delete(order.getId());
 //        }
-
-        // add
+//
+//        //  add
 //        List<Clothing> clothes = clothingDAO.findAll();
 //        for (Clothing clothing : clothes) {
 //            clothingDAO2.add(clothing);
@@ -107,24 +181,30 @@ public class Main {
 //        }
 //
 //
-        System.out.println("---TEST ADD---");
+//        System.out.println("---TEST ADD---");
 //        User newUser = new User.Builder("тест", "тест", "тест", "тест")
 //                .setPassword("тест")
 //                .build();
 //        System.out.println("Вставлений користувач: " + userDAO.findById(userDAO.add(newUser)));
-//
-        Clothing newClothing = new Clothing.Builder("тест", Size.XS, "тест", Season.WINTER, Sex.MALE)
-                .setAmount(1)
-                .setActualPrice(new BigDecimal(17))
-                .build();
-        clothingDAO.add(newClothing);
-        for (int i = 0; i < 10000; i++) {
-            clothingDAO.add(newClothing);
-        }
-        List<Clothing> clothes = clothingDAO.findAll();
-//        System.out.println(clothes);
-        System.out.println("Read " + clothes.size() + " clothing items successfully.");
 
+//        long startTime = System.currentTimeMillis();
+//
+//        Clothing newClothing = new Clothing.Builder("тест", Size.XS, "тест", Season.WINTER, Sex.MALE)
+//                .setAmount(1)
+//                .setActualPrice(new BigDecimal(17))
+//                .build();
+//        clothingDAO2.add(newClothing);
+//        for (int i = 0; i < 100000; i++) {
+//            clothingDAO2.add(newClothing);
+//        }
+        //       List<Clothing> clothes = clothingDAO.findAll();
+
+//        long endTime = System.currentTimeMillis();
+//        long totalTime = endTime - startTime;
+//
+//        System.out.println(clothes);
+//        System.out.println("Read " + clothes.size() + " clothing items successfully.");
+//        System.out.println("Total time: " + totalTime + " milliseconds.");
 //        System.out.println("Вставлена одежа: " + clothingDAO.findById(clothingDAO.add(newClothing)));
 //
 //        Delivery newDelivery = new Delivery.Builder("тест", "тест", "тест")
@@ -132,15 +212,16 @@ public class Main {
 //                .setEntrance(1)
 //                .build();
 //        Order newOrder = new Order.Builder()
-//                .addClothing(clothingDAO.findById("6550fafe473c391a243b5149"))
+//                .addClothing(clothingDAO2.findById("6550fafe473c391a243b5149"))
 //                .setStatus(Status.PROCESSING)
-//                .putUser(userDAO.findById("6554ce327192941e8a6f042f"))
+//                .putUser(userDAO2.findById("6554ce327192941e8a6f042f"))
 //                .setDelivery(newDelivery)
 //                .setDateTime(LocalDateTime.now())
 //                .build();
-//
+//        for (int i = 0; i < 100000; i++) {
+//            orderDAO2.add(newOrder);
+//        }
 //        System.out.println("Вставлене замовлення: " + orderDAO.findById(orderDAO.add(newOrder)));
-//
 //
 //        System.out.println("---TEST DELETE---");
 //        System.out.println("-----------------");

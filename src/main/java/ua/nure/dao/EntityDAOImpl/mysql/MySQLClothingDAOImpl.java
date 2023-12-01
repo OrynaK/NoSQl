@@ -1,5 +1,6 @@
 package ua.nure.dao.EntityDAOImpl.mysql;
 
+import org.bson.Document;
 import ua.nure.dao.EntityDAO.ClothingDAO;
 import ua.nure.entity.Clothing;
 import ua.nure.entity.User;
@@ -183,6 +184,46 @@ public class MySQLClothingDAOImpl implements ClothingDAO {
             throw new RuntimeException(e);
         }
         return clothingList;
+    }
+
+    @Override
+    public List<Document> aggregationShowClothing() {
+        return null;
+    }
+
+    @Override
+    public List<Document> aggregateGroupBySize() {
+        return null;
+    }
+
+    @Override
+    public List<Document> aggregationFilterBySeason(Season targetSeason) {
+        return null;
+    }
+
+    @Override
+    public List<Document> aggregationAveragePricePerSize() {
+        return null;
+    }
+
+    @Override
+    public List<Document> showClothing() {
+        return null;
+    }
+
+    @Override
+    public List<Document> filterBySeason(Season targetSeason) {
+        return null;
+    }
+
+    @Override
+    public List<Document> groupBySize() {
+        return null;
+    }
+
+    @Override
+    public List<Document> averagePricePerSize() {
+        return null;
     }
 
 }
